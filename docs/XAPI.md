@@ -12,12 +12,12 @@
 7. App permissionsとしてRead and writeを選択
 8. 以下のように設定
 
-App permissions : Read and write
-Type of App : Web App, Automated App or Bot
+- App permissions : Read and write
+- Type of App : Web App, Automated App or Bot
 
-Callback URL / Redirect URL : https://localhost/
-Website URL : https://example.com
-Organization name / Organization URL : 任意
+- Callback URL / Redirect URL : https://localhost/
+- Website URL : https://example.com
+- Organization name / Organization URL : 任意
 
 9. Yesを選択
 10. Client IDとClient Secretをメモ（OAuth 1.0a）
@@ -39,9 +39,9 @@ The purpose is to experiment with news summarization and posting automation for 
 
 ## テスト用アカウント
 
-Client ID eFFUN3k5VG1jVGlzNjdCZkVwbzM6MTpjaQ
-Client Secret LQOlD8qdpW3qGqvjIVWl8cHTbXezzUcQ8gmRM6SRMJjdWaxn7r
-API Key LBttVQTXxnPGp7QmXj9crcOSd
-API Key Secret rmcTs0gHheS17WhtBY3y9Ca0CtvSpVAGdAbuIgF6Ttezx9U8PC
-Access Token 1995751066701627394-KadRGDXOHOSw6v4D2OyGGcrnAT4eY7
-Access Token Secret 9VMSx34xQwegMPhEBXAPBpQr5cNPDCYUdvC57FedpWBzU
+- Client ID eFFUN3k5VG1jVGlzNjdCZkVwbzM6MTpjaQ
+- Client Secret LQOlD8qdpW3qGqvjIVWl8cHTbXezzUcQ8gmRM6SRMJjdWaxn7r
+- API Key LBttVQTXxnPGp7QmXj9crcOSd
+- API Key Secret rmcTs0gHheS17WhtBY3y9Ca0CtvSpVAGdAbuIgF6Ttezx9U8PC
+- Access Token 1995751066701627394-KadRGDXOHOSw6v4D2OyGGcrnAT4eY7
+- Access Token Secret 9VMSx34xQwegMPhEBXAPBpQr5cNPDCYUdvC57FedpWBzU
