@@ -20,7 +20,10 @@ Website URL : https://example.com
 Organization name / Organization URL : 任意
 
 9. Yesを選択
-10. Client IDとClient Secretをメモ
+10. Client IDとClient Secretをメモ（OAuth 1.0a）
+11. Project&Appsにもどり、「Keys and tokens」 をクリック
+12. Consumer KeysからAPI Key and SecretのRegenerateをクリックして、API KeyとAPI Secretをメモ
+13. Access token and secretからGenerateをクリックして、Access TokenとAccess Token Secretをメモ
 
 ## 申請文
 
@@ -38,3 +41,7 @@ The purpose is to experiment with news summarization and posting automation for 
 
 Client ID eFFUN3k5VG1jVGlzNjdCZkVwbzM6MTpjaQ
 Client Secret LQOlD8qdpW3qGqvjIVWl8cHTbXezzUcQ8gmRM6SRMJjdWaxn7r
+API Key LBttVQTXxnPGp7QmXj9crcOSd
+API Key Secret rmcTs0gHheS17WhtBY3y9Ca0CtvSpVAGdAbuIgF6Ttezx9U8PC
+Access Token 1995751066701627394-KadRGDXOHOSw6v4D2OyGGcrnAT4eY7
+Access Token Secret 9VMSx34xQwegMPhEBXAPBpQr5cNPDCYUdvC57FedpWBzU
