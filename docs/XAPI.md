@@ -36,12 +36,3 @@ The tool will:
 - and automatically post them to a dedicated X account.
 
 The purpose is to experiment with news summarization and posting automation for personal development and a client project. It will not be used for spam or aggressive growth. The account will clearly state that it is an automated bot.
-
-## テスト用アカウント
-
-- Client ID eFFUN3k5VG1jVGlzNjdCZkVwbzM6MTpjaQ
-- Client Secret LQOlD8qdpW3qGqvjIVWl8cHTbXezzUcQ8gmRM6SRMJjdWaxn7r
-- API Key LBttVQTXxnPGp7QmXj9crcOSd
-- API Key Secret rmcTs0gHheS17WhtBY3y9Ca0CtvSpVAGdAbuIgF6Ttezx9U8PC
-- Access Token 1995751066701627394-KadRGDXOHOSw6v4D2OyGGcrnAT4eY7
-- Access Token Secret 9VMSx34xQwegMPhEBXAPBpQr5cNPDCYUdvC57FedpWBzU
