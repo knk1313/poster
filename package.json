@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
-    "deploy": "npm run build && gcloud functions deploy fetchYahooNews --gen2 --region=asia-northeast1 --runtime=nodejs22 --entry-point=fetchYahooNews --trigger-http --allow-unauthenticated"
+    "deploy": "powershell -Command \"$envVal=$env:OPENAI_API_KEY; if (-not $envVal) { if (Test-Path .env) { $line = Get-Content .env | Where-Object { $_ -match '^OPENAI_API_KEY=your_openai_api_key
   },
   "repository": {
     "type": "git",
