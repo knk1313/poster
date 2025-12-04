@@ -2,14 +2,15 @@
   "name": "yahoo-news-x-bot",
   "version": "1.0.0",
   "description": "ヤフーニュースのランキング上位記事を完全自動でXに投稿するbot",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "deploy": "npm run build && gcloud functions deploy fetchYahooNews --gen2 --region=asia-northeast1 --runtime=nodejs22 --entry-point=fetchYahooNews --trigger-http --allow-unauthenticated"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   },
   "homepage": "https://github.com/knk1313/yahoo-news-x-bot#readme",
   "devDependencies": {
+    "@types/cheerio": "^0.22.35",
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
@@ -35,6 +37,11 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "dotenv": "^17.2.3"
+    "axios": "^1.13.2",
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.3",
+    "fast-xml-parser": "^5.3.2",
+    "googleapis": "^166.0.0",
+    "openai": "^6.9.1"
   }
 }
