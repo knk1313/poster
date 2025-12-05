@@ -15,9 +15,10 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
     await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth });
 
+    // URL 重複チェック (F列: url)
     const existingUrlsResponse = await sheetsApi.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'news-sheet1!C:C',
+      range: 'news-sheet1!F:F',
     });
     const existingUrls = new Set(
       (existingUrlsResponse.data.values ?? [])
@@ -38,7 +39,7 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
       return;
     }
 
-    const values = [];
+    const values: any[] = [];
     let failedCount = 0;
 
     for (const item of newItems) {
@@ -52,7 +53,6 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
         console.error(`Failed to fetch body: ${url}`, bodyErr);
       }
 
-      let summaryTitle = item.title;
       let summaryLong = item.title;
       let hashtagsList: string[] = ['#ニュース'];
       let captionText = item.title;
@@ -65,20 +65,14 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
           url,
           body,
         });
-        if (
-          !summary ||
-          (!summary.title &&
-            !summary.summaryLong &&
-            (!summary.hashtags || !summary.hashtags.length))
-        ) {
+        if (!summary || (!summary.title && !summary.summaryLong && (!summary.hashtags || !summary.hashtags.length))) {
           console.warn(`[generateArticleSummary] Empty response for url=${url}`);
         } else {
           console.log(
             `[generateArticleSummary] url=${url} titleLen=${(summary.title || '').length} summaryLongLen=${(summary.summaryLong || '').length} hashtags=${summary.hashtags?.join(' ')}`,
           );
         }
-        summaryTitle = summary.title || summaryTitle;
-        summaryLong = summary.summaryLong || summaryLong;
+        summaryLong = summary.summaryLong || summary.title || summaryLong;
         hashtagsList = summary.hashtags.length ? summary.hashtags.slice(0, 4) : hashtagsList;
       } catch (summaryErr) {
         console.error(`Failed to summarize item: ${url}`, summaryErr);
@@ -103,18 +97,19 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
         const hashtagsString = hashtagsList.join(' ');
         const tweetText = buildTweet(captionText, url, captionHashtags || hashtagsString);
 
+        // A:source B:category C:fetched_at D:title E:summary F:url G:Hashtags H:tweet draft I:tweet_id J:posted_at K:condition
         values.push([
-          '', // A: condition
-          '', // B: tweet_id
-          '', // C: posted_at
-          'yahoo_rss', // D: source
-          item.category ?? '', // E: category
-          item.fetchedAt, // F: fetched_at
-          item.title, // G: title (RSSのタイトル)
-          summaryLong, // H: summary (長めの要約)
-          url, // I: url
-          captionHashtags || hashtagsString, // J: Hashtags（caption.hashtags優先）
-          tweetText, // K: tweet draft (caption + url + hashtags)
+          'yahoo_rss',
+          item.category ?? '',
+          item.fetchedAt,
+          item.title,
+          summaryLong,
+          url,
+          captionHashtags || hashtagsString,
+          tweetText,
+          '',
+          '',
+          '',
         ]);
       } catch (itemErr) {
         failedCount += 1;
@@ -130,7 +125,7 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
 
     await sheetsApi.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'news-sheet1!A:M',
+      range: 'news-sheet1!A:K',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values,
@@ -139,6 +134,59 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
 
     console.log(`Appended ${values.length} rows to sheet (failed: ${failedCount})`);
     res.status(200).send(`OK: appended ${values.length} rows`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('ERROR');
+  }
+};
+
+export const postNewsFromSheet = async (req: any, res: any): Promise<void> => {
+  try {
+    const auth = new google.auth.GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    await auth.getClient();
+    const sheetsApi = google.sheets({ version: 'v4', auth });
+
+    const rowsResponse = await sheetsApi.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'news-sheet1!A:K',
+    });
+
+    const rows = rowsResponse.data.values ?? [];
+    const targetIndex = rows.findIndex((row) => {
+      const postedAt = row[9]; // J: posted_at
+      return !postedAt || `${postedAt}`.trim() === '';
+    });
+
+    if (targetIndex === -1) {
+      res.status(200).send('未投稿の記事なし');
+      return;
+    }
+
+    const row = rows[targetIndex];
+    const title = row[3] ?? ''; // D: title
+    const summary = row[4] ?? ''; // E: summary
+    const url = row[5] ?? ''; // F: url
+    const hashtags = row[6] ?? ''; // G: hashtags
+
+    const tweetDraft = buildTweet(summary || title, url, hashtags);
+    // TODO: Call X API to post tweetDraft
+
+    const rowNumber = targetIndex + 1; // Sheets is 1-based
+    const now = new Date().toISOString();
+
+    await sheetsApi.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `news-sheet1!J${rowNumber}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [[now]],
+      },
+    });
+
+    console.log(`Posted one item: title="${title}", url=${url}, row=${rowNumber}`);
+    res.status(200).send(`OK: posted one item (row ${rowNumber})`);
   } catch (err) {
     console.error(err);
     res.status(500).send('ERROR');

@@ -10,9 +10,9 @@ export type YahooNewsItem = {
 
 const RSS_FEEDS: Record<string, string> = {
   トップ: 'https://news.yahoo.co.jp/rss/topics/top-picks.xml',
-  国内: 'https://news.yahoo.co.jp/rss/topics/domestic.xml',
-  国際: 'https://news.yahoo.co.jp/rss/topics/world.xml',
-  経済: 'https://news.yahoo.co.jp/rss/topics/business.xml',
+  // 国内: 'https://news.yahoo.co.jp/rss/topics/domestic.xml',
+  // 国際: 'https://news.yahoo.co.jp/rss/topics/world.xml',
+  // 経済: 'https://news.yahoo.co.jp/rss/topics/business.xml',
   // 必要に応じて追加
 };
 

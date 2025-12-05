@@ -1,4 +1,3 @@
-// scripts/testCaption.ts
 import 'dotenv/config';
 import { generateCaption } from '../src/aiCaption';
 import { generateArticleSummary } from '../src/aiArticleSummary';
