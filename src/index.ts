@@ -4,8 +4,25 @@ import { fetchArticleBody } from './fetchArticleBody';
 import { generateArticleSummary } from './aiArticleSummary';
 import { generateCaption } from './aiCaption';
 import { buildTweet } from './buildTweet';
+import { TwitterApi } from 'twitter-api-v2';
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1p0p_QNN79JiA_ir0kXfrlOtRYI8gm7xOuT7MZosOiIc';
+
+function getTwitterClient(): TwitterApi {
+  const apiKey = process.env.X_API_KEY;
+  const apiSecret = process.env.X_API_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessSecret = process.env.X_ACCESS_TOKEN_SECRET;
+  if (!apiKey || !apiSecret || !accessToken || !accessSecret) {
+    throw new Error('X API credentials are not set in environment variables');
+  }
+  return new TwitterApi({
+    appKey: apiKey.trim(),
+    appSecret: apiSecret.trim(),
+    accessToken: accessToken.trim(),
+    accessSecret: accessSecret.trim(),
+  });
+}
 
 export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
   try {
@@ -65,14 +82,19 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
           url,
           body,
         });
-        if (!summary || (!summary.title && !summary.summaryLong && (!summary.hashtags || !summary.hashtags.length))) {
+        if (
+          !summary ||
+          (!summary.title &&
+            !summary.summaryLong &&
+            (!summary.hashtags || !summary.hashtags.length))
+        ) {
           console.warn(`[generateArticleSummary] Empty response for url=${url}`);
         } else {
           console.log(
             `[generateArticleSummary] url=${url} titleLen=${(summary.title || '').length} summaryLongLen=${(summary.summaryLong || '').length} hashtags=${summary.hashtags?.join(' ')}`,
           );
         }
-        summaryLong = summary.summaryLong || summary.title || summaryLong;
+        summaryLong = summary.summaryLong || summaryLong;
         hashtagsList = summary.hashtags.length ? summary.hashtags.slice(0, 4) : hashtagsList;
       } catch (summaryErr) {
         console.error(`Failed to summarize item: ${url}`, summaryErr);
@@ -147,6 +169,7 @@ export const postNewsFromSheet = async (req: any, res: any): Promise<void> => {
     });
     await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth });
+    const twitterClient = getTwitterClient();
 
     const rowsResponse = await sheetsApi.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -169,19 +192,44 @@ export const postNewsFromSheet = async (req: any, res: any): Promise<void> => {
     const summary = row[4] ?? ''; // E: summary
     const url = row[5] ?? ''; // F: url
     const hashtags = row[6] ?? ''; // G: hashtags
+    const rowNumber = targetIndex + 1; // Sheets is 1-based
 
     const tweetDraft = buildTweet(summary || title, url, hashtags);
-    // TODO: Call X API to post tweetDraft
+    let tweetId = '';
+    try {
+      const tweetResult = await twitterClient.v2.tweet(tweetDraft);
+      tweetId = tweetResult.data?.id ?? '';
+    } catch (postErr: any) {
+      const status = postErr?.code || postErr?.status;
+      const isRateLimit = status === 429;
+      const isAuth = status === 401;
+      console.error(
+        `[postNewsFromSheet] Failed to post tweet row=${rowNumber} status=${status} url=${url}`,
+        postErr,
+      );
+      if (isRateLimit || isAuth || (status && status >= 500)) {
+        // スキップ（rate limit/認証/一時障害）
+        res.status(200).send(`Skipped posting (status ${status || 'unknown'})`);
+        return;
+      }
+      res.status(500).send('Failed to post tweet');
+      return;
+    }
 
-    const rowNumber = targetIndex + 1; // Sheets is 1-based
+    if (!tweetId) {
+      console.warn(`[postNewsFromSheet] Tweet posted but no id returned row=${rowNumber}`);
+      res.status(200).send('Tweet posted but no id returned');
+      return;
+    }
+
     const now = new Date().toISOString();
 
     await sheetsApi.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `news-sheet1!J${rowNumber}`,
+      range: `news-sheet1!I${rowNumber}:K${rowNumber}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [[now]],
+        values: [[tweetId, now, 'approved']],
       },
     });
 
