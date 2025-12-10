@@ -14,7 +14,6 @@
 
 - App permissions : Read and write
 - Type of App : Web App, Automated App or Bot
-
 - Callback URL / Redirect URL : https://localhost/
 - Website URL : https://example.com
 - Organization name / Organization URL : 任意

@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+﻿import { google } from 'googleapis';
 import { fetchYahooNewsRanking, YahooNewsItem } from './yahoo/fetchRanking';
 import { fetchArticleBody } from './fetchArticleBody';
 import { generateArticleSummary } from './aiArticleSummary';
@@ -32,7 +32,7 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
     await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth });
 
-    // URL 重複チェック (F列: url)
+    // URL 驥崎､・メ繧ｧ繝・け (F蛻・ url)
     const existingUrlsResponse = await sheetsApi.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: 'news-sheet1!F:F',
@@ -45,7 +45,14 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
     );
 
     const items: YahooNewsItem[] = await fetchYahooNewsRanking();
-    const newItems = items.filter((item) => !existingUrls.has(item.url.trim())).slice(0, 5);
+    const newItems = items
+      .filter((item) => !existingUrls.has(item.url.trim()))
+      .sort((a, b) => {
+        const ad = new Date(a.fetchedAt).getTime();
+        const bd = new Date(b.fetchedAt).getTime();
+        return (isNaN(bd) ? 0 : bd) - (isNaN(ad) ? 0 : ad);
+      })
+      .slice(0, 5);
 
     console.log(
       `Fetched ${items.length} items from Yahoo RSS; existing URLs: ${existingUrls.size}; new items: ${newItems.length}`,
@@ -71,9 +78,9 @@ export const fetchYahooNews = async (req: any, res: any): Promise<void> => {
       }
 
       let summaryLong = item.title;
-      let hashtagsList: string[] = ['#ニュース'];
+      let hashtagsList: string[] = ['#繝九Η繝ｼ繧ｹ'];
       let captionText = item.title;
-      let captionHashtags = '#ニュース';
+      let captionHashtags = '#繝九Η繝ｼ繧ｹ';
 
       try {
         const summary = await generateArticleSummary({
@@ -177,24 +184,35 @@ export const postNewsFromSheet = async (req: any, res: any): Promise<void> => {
     });
 
     const rows = rowsResponse.data.values ?? [];
-    const targetIndex = rows.findIndex((row) => {
-      const postedAt = row[9]; // J: posted_at
-      return !postedAt || `${postedAt}`.trim() === '';
-    });
+    const candidates = rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => {
+        const postedAt = row[9]; // J: posted_at
+        return !postedAt || `${postedAt}`.trim() === '';
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.row[2] ?? '').getTime() || 0; // C: fetched_at
+        const bTime = new Date(b.row[2] ?? '').getTime() || 0;
+        return bTime - aTime;
+      });
 
-    if (targetIndex === -1) {
+    if (candidates.length === 0) {
       res.status(200).send('未投稿の記事なし');
       return;
     }
 
-    const row = rows[targetIndex];
+    const { row, idx: targetIndex } = candidates[0];
     const title = row[3] ?? ''; // D: title
     const summary = row[4] ?? ''; // E: summary
     const url = row[5] ?? ''; // F: url
     const hashtags = row[6] ?? ''; // G: hashtags
+    const draftFromSheet = row[7] ?? ''; // H: tweet draft
     const rowNumber = targetIndex + 1; // Sheets is 1-based
 
-    const tweetDraft = buildTweet(summary || title, url, hashtags);
+    const tweetDraft =
+      draftFromSheet && `${draftFromSheet}`.trim().length > 0
+        ? `${draftFromSheet}`.trim()
+        : buildTweet(summary || title, url, hashtags);
     let tweetId = '';
     try {
       const tweetResult = await twitterClient.v2.tweet(tweetDraft);
@@ -208,7 +226,6 @@ export const postNewsFromSheet = async (req: any, res: any): Promise<void> => {
         postErr,
       );
       if (isRateLimit || isAuth || (status && status >= 500)) {
-        // スキップ（rate limit/認証/一時障害）
         res.status(200).send(`Skipped posting (status ${status || 'unknown'})`);
         return;
       }
