@@ -1,68 +1,70 @@
+﻿export type PostParts = {
+  figureName: string;
+  quote: string;
+  source: string;
+  shortExplain: string;
+  trivia: string;
+  hashtags: string[];
+};
+
 export const MAX_TWEET_LENGTH = Number(process.env.MAX_TWEET_LENGTH ?? 280);
 
-function composeTweet(caption: string, url: string, hashtags: string): string {
-  const separator = caption ? '\n' : '';
-  const hashtagPart = hashtags ? ` ${hashtags}` : '';
-  return `${caption}${separator}${url}${hashtagPart}`;
+function composeLines(lines: string[]): string {
+  return lines
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0)
+    .join('\n');
 }
 
-function trimCaption(caption: string, allowedLength: number): string {
-  if (allowedLength <= 0) {
-    return '';
-  }
-
-  if (caption.length <= allowedLength) {
-    return caption;
-  }
-
-  const sliced = caption.slice(0, allowedLength);
-  const lastSpace = sliced.lastIndexOf(' ');
-
-  if (lastSpace > allowedLength * 0.6) {
-    return sliced.slice(0, lastSpace).trim();
-  }
-
-  return sliced.trim();
+function truncateText(text: string, maxLen: number): string {
+  if (maxLen <= 0) return '';
+  if (text.length <= maxLen) return text;
+  if (maxLen <= 3) return text.slice(0, maxLen);
+  return `${text.slice(0, maxLen - 3).trimEnd()}...`;
 }
 
-export function buildTweet(caption: string, url: string, hashtags: string): string {
-  const captionPart = caption.trim();
-  const urlPart = url.trim();
-  const hashtagsPart = hashtags.trim();
+export function buildTweet(parts: PostParts): string {
+  const quoteLine = `「${parts.quote.trim()}」`;
+  const figureLine = `　${parts.figureName.trim()}${parts.source ? `（${parts.source.trim()}）` : ''}`;
+  const hashtagsLine = parts.hashtags.join(' ').trim();
 
-  let tweet = composeTweet(captionPart, urlPart, hashtagsPart);
+  let shortExplain = parts.shortExplain.trim();
+  let trivia = parts.trivia.trim();
+
+  let tweet = composeLines([quoteLine, figureLine, shortExplain, trivia, hashtagsLine]);
   if (tweet.length <= MAX_TWEET_LENGTH) {
     return tweet;
   }
 
-  const baseLength = urlPart.length + (hashtagsPart ? 1 + hashtagsPart.length : 0);
-  const newlineCost = captionPart ? 1 : 0;
-  const allowedCaptionLength = Math.max(MAX_TWEET_LENGTH - baseLength - newlineCost, 0);
+  const withoutTrivia = composeLines([quoteLine, figureLine, shortExplain, hashtagsLine]);
+  const maxTriviaLength = MAX_TWEET_LENGTH - withoutTrivia.length - (trivia ? 1 : 0);
+  if (maxTriviaLength < 0) {
+    trivia = '';
+  } else {
+    trivia = truncateText(trivia, maxTriviaLength);
+  }
 
-  const trimmedCaption = trimCaption(captionPart, allowedCaptionLength);
-  tweet = composeTweet(trimmedCaption, urlPart, hashtagsPart);
-
+  tweet = composeLines([quoteLine, figureLine, shortExplain, trivia, hashtagsLine]);
   if (tweet.length <= MAX_TWEET_LENGTH) {
     return tweet;
   }
 
-  const tags = hashtagsPart ? hashtagsPart.split(/\s+/).filter(Boolean) : [];
-  let workingHashtags = tags;
-
-  while (tweet.length > MAX_TWEET_LENGTH && workingHashtags.length > 0) {
-    workingHashtags = workingHashtags.slice(0, workingHashtags.length - 1);
-    tweet = composeTweet(trimmedCaption, urlPart, workingHashtags.join(' '));
+  const withoutShortExplain = composeLines([quoteLine, figureLine, trivia, hashtagsLine]);
+  const maxExplainLength = MAX_TWEET_LENGTH - withoutShortExplain.length - (shortExplain ? 1 : 0);
+  if (maxExplainLength < 0) {
+    shortExplain = '';
+  } else {
+    shortExplain = truncateText(shortExplain, maxExplainLength);
   }
 
-  if (tweet.length > MAX_TWEET_LENGTH) {
-    // As a last resort, drop hashtags entirely.
-    tweet = composeTweet(trimmedCaption, urlPart, '');
+  tweet = composeLines([quoteLine, figureLine, shortExplain, trivia, hashtagsLine]);
+  if (tweet.length <= MAX_TWEET_LENGTH) {
+    return tweet;
   }
 
-  if (tweet.length > MAX_TWEET_LENGTH) {
-    // Extremely long URLs are unlikely, but guard against them.
-    return tweet.slice(tweet.length - MAX_TWEET_LENGTH);
-  }
+  const withoutQuote = composeLines([figureLine, shortExplain, trivia, hashtagsLine]);
+  const maxQuoteLength = MAX_TWEET_LENGTH - withoutQuote.length - 1;
+  const trimmedQuote = truncateText(quoteLine, Math.max(maxQuoteLength, 0));
 
-  return tweet;
+  return composeLines([trimmedQuote, figureLine, shortExplain, trivia, hashtagsLine]);
 }

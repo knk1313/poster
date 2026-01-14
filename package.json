@@ -1,33 +1,23 @@
 {
-  "name": "yahoo-news-x-bot",
+  "name": "poster-x-bot",
   "version": "1.0.0",
-  "description": "ヤフーニュースのランキング上位記事を完全自動でXに投稿するbot",
+  "description": "AI auto-posting bot for X.",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "start": "node dist/localServer.js",
+    "dev": "ts-node src/localServer.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
-    "deploy": "powershell -Command \"$envVal=$env:OPENAI_API_KEY; if (-not $envVal) { if (Test-Path .env) { $line = Get-Content .env | Where-Object { $_ -match '^OPENAI_API_KEY=your_openai_api_key
-    "deploy:post": "powershell -NoProfile -Command \"$envData=@{}; if (Test-Path .env) { Get-Content .env | ForEach-Object { if ($_ -match '^(\\s*#|\\s*$)') { return }; if ($_ -match '^\\s*([^=]+)=(.*)$') { $envData[$matches[1].Trim()] = $matches[2].Trim() } } }; $openai=$envData.OPENAI_API_KEY; if (-not $openai -and $env:OPENAI_API_KEY) { $openai = $env:OPENAI_API_KEY }; $sheet=$envData.SPREADSHEET_ID; if (-not $sheet -and $env:SPREADSHEET_ID) { $sheet = $env:SPREADSHEET_ID }; if (-not $openai -or -not $sheet) { Write-Error 'OPENAI_API_KEY or SPREADSHEET_ID is not set in env or .env'; exit 1 }; npm run build; gcloud functions deploy postNewsFromSheet --gen2 --region=asia-northeast1 --runtime=nodejs22 --entry-point=postNewsFromSheet --trigger-http --allow-unauthenticated --memory=512MiB --set-env-vars OPENAI_API_KEY=your_openai_api_key
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/knk1313/yahoo-news-x-bot.git"
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/knk1313/yahoo-news-x-bot/issues"
-  },
-  "homepage": "https://github.com/knk1313/yahoo-news-x-bot#readme",
   "devDependencies": {
-    "@types/cheerio": "^0.22.35",
     "@types/node": "^24.10.1",
+    "@types/pg": "^8.16.0",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
     "eslint": "^9.39.1",
@@ -38,12 +28,10 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "axios": "^1.13.2",
-    "cheerio": "^1.1.2",
+    "@google-cloud/storage": "^7.17.1",
     "dotenv": "^17.2.3",
-    "fast-xml-parser": "^5.3.2",
-    "googleapis": "^166.0.0",
     "openai": "^6.9.1",
+    "pg": "^8.16.3",
     "twitter-api-v2": "^1.18.0"
   }
 }
