@@ -61,7 +61,7 @@ Deploy to Cloud Run:
 gcloud run deploy poster-x-bot \
   --source . \
   --region asia-northeast1 \
-  --set-env-vars OPENAI_API_KEY=your_openai_api_key
+  --set-env-vars OPENAI_API_KEY=...,IG_ACCESS_TOKEN=...,IG_USER_ID=...,DATABASE_URL=...,GCS_BUCKET=...,GCS_PUBLIC=true,GCS_PREFIX=images,CRON_SECRET=... \
   --set-cloudsql-instances PROJECT:REGION:INSTANCE
 ```
 

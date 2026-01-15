@@ -23,11 +23,13 @@
 ### 3.1 投稿テキスト生成
 
 入力:
+
 - テーマ: 世界の偉人と名言
 - サブテーマ: 文学
 - 言語: 日本語
 
 出力（構造化）:
+
 - figure_name: 偉人名
 - quote: 名言
 - source: 出典（不明なら「諸説あり」）
@@ -37,6 +39,7 @@
 - post_text: 投稿本文（Instagramの上限内）
 
 ルール:
+
 - 断定が危険な逸話は避ける or 注釈。
 - 同一人物・同一名言の短期重複は避ける（30日目安）。
 
@@ -73,3 +76,78 @@
 ## 5. 運用メモ
 
 実行方法、DB構造、ローカル構成、認証情報は `README.md` にまとめる。
+
+## 6. 実行構成（Cloud Run + Cloud SQL + Cloud Storage）
+
+- Cloud Run で `Dockerfile` ビルド（GitHub連携想定）。
+- Cloud SQL は PostgreSQL。`DATABASE_URL` で接続する。
+- Cloud Storage に画像を保存し、Instagramへは公開URLまたは署名URLを渡す。
+- `CRON_SECRET` を使ってHTTPエンドポイントを保護する。
+
+### 6.1 必須の環境変数（Cloud Run）
+
+- `OPENAI_API_KEY`
+- `OPENAI_IMAGE_MODEL`（例: `dall-e-3`）
+- `IG_ACCESS_TOKEN`（Page access token）
+- `IG_USER_ID`（Instagram business account id）
+- `DATABASE_URL`（例: `postgresql://USER:PASSWORD@/DB?host=/cloudsql/PROJECT:REGION:INSTANCE`）
+- `GCS_BUCKET`
+- `GCS_PUBLIC`（`true` or `false`）
+- `GCS_PREFIX`（例: `images`）
+- `CRON_SECRET`
+
+### 6.2 Cloud Storage について
+
+- `GCS_PUBLIC=true` の場合、アップロード後に `makePublic` を呼ぶ。
+  - バケットが **Uniform bucket-level access (UBLA)** の場合は `makePublic` が失敗するため、
+    `GCS_PUBLIC=false` にして署名URLを使う。
+- `GCS_PUBLIC=false` の場合、署名URLを発行するため **Service Account Token Creator** 権限が必要。
+
+## 7. エンドポイント
+
+- `GET /health` : ヘルスチェック
+- `GET|POST /generate` : 下書き生成
+- `POST /post` : 最新の下書きを投稿
+- `POST /scheduled` : 生成→投稿を一括実行
+
+※ `CRON_SECRET` を設定している場合は `X-CRON-SECRET` を付与する。
+
+## 8. テスト手順（Cloud Run）
+
+### 8.1 ヘルスチェック
+
+```bash
+curl.exe -X GET "https://YOUR_RUN_URL/health" -H "X-CRON-SECRET: your-secret"
+```
+
+### 8.2 生成のみ
+
+PowerShellのPOSTは空ボディが必要:
+
+```bash
+curl.exe -X POST "https://YOUR_RUN_URL/generate" -H "X-CRON-SECRET: your-secret" -H "Content-Type: application/json" --data-binary "{}"
+```
+
+### 8.3 生成→投稿（最短）
+
+```bash
+curl.exe -X POST "https://YOUR_RUN_URL/scheduled" -H "X-CRON-SECRET: your-secret" --data-binary "{}"
+```
+
+### 8.4 署名URL運用時の注意
+
+- `GCS_PUBLIC=false` の場合、署名URLは短時間で失効するため
+  `POST /scheduled` で **生成→投稿を連続実行**する。
+
+## 9. Cloud Scheduler（1日3回）
+
+```bash
+gcloud scheduler jobs create http poster-x-bot --location=asia-northeast1 --schedule="0 8,13,20 * * *" --time-zone="Asia/Tokyo" --uri="https://YOUR_RUN_URL/scheduled" --http-method=POST --headers="X-CRON-SECRET=your-secret,Content-Type=application/json" --message-body="{}"
+```
+
+オン/オフ切替:
+
+```bash
+gcloud scheduler jobs pause poster-x-bot --location=asia-northeast1
+gcloud scheduler jobs resume poster-x-bot --location=asia-northeast1
+```
