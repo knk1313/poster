@@ -64,7 +64,7 @@ const imageSize = allowedImageSizes.includes(imageSizeEnv as ImageSize)
   : '1024x1024';
 
 const overlayText = normalizeMultiline(
-  process.env.IMAGE_OVERLAY_TEXT ?? '一生覚えておきたい\n心に刺さる言葉',
+  process.env.IMAGE_OVERLAY_TEXT ?? '一生覚えておきたい\n世界の偉人と名言',
 );
 const overlayEnabled =
   (process.env.IMAGE_OVERLAY_ENABLED ?? 'true').toLowerCase() !== 'false' &&
