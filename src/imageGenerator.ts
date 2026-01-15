@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Storage } from '@google-cloud/storage';
+import sharp from 'sharp';
 import { getOpenAIClient } from './openaiClient';
 import { CONFIG, ImageSize } from './config';
 
@@ -94,6 +95,70 @@ async function writeImageFile(image: { b64_json?: string | null; url?: string | 
   throw new Error('OpenAI image response missing url/b64_json');
 }
 
+function buildOverlaySvg(params: { width: number; height: number; text: string }): Buffer {
+  const lines = params.text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) {
+    return Buffer.from('');
+  }
+
+  const width = params.width;
+  const height = params.height;
+  const fontSize = Math.round(width * 0.05);
+  const lineHeight = Math.round(fontSize * 1.25);
+  const padding = Math.round(width * 0.06);
+  const blockHeight = lineHeight * lines.length + padding;
+  const startY = height - blockHeight;
+  const textStartY = startY + padding * 0.6 + fontSize;
+  const centerX = width / 2;
+
+  const tspans = lines
+    .map((line, index) => {
+      const y = textStartY + lineHeight * index;
+      return `<tspan x="${centerX}" y="${y}">${line}</tspan>`;
+    })
+    .join('');
+
+  const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="${startY}" width="${width}" height="${blockHeight}" fill="rgba(0,0,0,0.45)" />
+      <text x="${centerX}" y="${textStartY}" text-anchor="middle" font-size="${fontSize}" font-weight="700"
+        font-family="Noto Sans JP, Hiragino Kaku Gothic ProN, Yu Gothic, Meiryo, sans-serif" fill="#ffffff">
+        ${tspans}
+      </text>
+    </svg>
+  `;
+
+  return Buffer.from(svg);
+}
+
+async function applyTextOverlay(filePath: string, text: string): Promise<void> {
+  if (!text.trim()) return;
+
+  const originalBuffer = await fs.promises.readFile(filePath);
+  const image = sharp(originalBuffer);
+  const meta = await image.metadata();
+  const width = meta.width ?? 1024;
+  const height = meta.height ?? 1024;
+
+  const overlaySvg = buildOverlaySvg({ width, height, text });
+  if (!overlaySvg.length) return;
+
+  const outputBuffer = await image
+    .composite([{ input: overlaySvg, top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+
+  if (outputBuffer.length > MAX_IMAGE_BYTES) {
+    return;
+  }
+
+  await fs.promises.writeFile(filePath, outputBuffer);
+}
+
 export async function generateImage(params: {
   figureName: string;
   quote: string;
@@ -124,6 +189,9 @@ export async function generateImage(params: {
     const bytes = await writeImageFile(image, filePath);
 
     if (bytes <= MAX_IMAGE_BYTES) {
+      if (CONFIG.imageOverlay.enabled) {
+        await applyTextOverlay(filePath, CONFIG.imageOverlay.text);
+      }
       const url = await uploadToGcs(filePath, fileName);
       return { path: filePath, prompt, url };
     }

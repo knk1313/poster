@@ -88,6 +88,8 @@
 
 - `OPENAI_API_KEY`
 - `OPENAI_IMAGE_MODEL`（例: `dall-e-3`）
+- `IMAGE_OVERLAY_ENABLED`（例: `true`）
+- `IMAGE_OVERLAY_TEXT`（例: `一生覚えておきたい\n心に刺さる言葉`）
 - `IG_ACCESS_TOKEN`（Page access token）
 - `IG_USER_ID`（Instagram business account id）
 - `DATABASE_URL`（例: `postgresql://USER:PASSWORD@/DB?host=/cloudsql/PROJECT:REGION:INSTANCE`）

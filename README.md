@@ -53,6 +53,13 @@ Instagram Graph API needs a **public image URL**.
 
 Generated images are kept under 5MB. You can set `OPENAI_IMAGE_SIZE` to `512x512` or `256x256` in `.env` if needed.
 
+## Text Overlay
+
+You can add a headline on top of the generated image.
+
+- `IMAGE_OVERLAY_ENABLED=true`
+- `IMAGE_OVERLAY_TEXT=一生覚えておきたい\n心に刺さる言葉` (use `\n` for line breaks)
+
 ## Cloud Run + Cloud SQL + Cloud Storage (example)
 
 Deploy to Cloud Run:
