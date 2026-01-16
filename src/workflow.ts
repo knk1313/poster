@@ -20,10 +20,12 @@ export async function createDraft(scheduledFor?: string): Promise<PostRecord> {
   const recent = await getRecentPosts(CONFIG.duplicateDays);
 
   let content = null;
+  let lastCandidate = null;
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
     const candidate = await generatePostContent(
       recent.map((post) => ({ figureName: post.figure_name, quote: post.quote })),
     );
+    lastCandidate = candidate;
 
     if (isDuplicate(recent, candidate.figureName, candidate.quote)) {
       console.warn(`[createDraft] Duplicate detected (attempt ${attempt})`);
@@ -34,8 +36,13 @@ export async function createDraft(scheduledFor?: string): Promise<PostRecord> {
     break;
   }
 
+  if (!content && lastCandidate) {
+    console.warn('[createDraft] Falling back to last candidate after duplicates');
+    content = lastCandidate;
+  }
+
   if (!content) {
-    throw new Error('Failed to generate unique content');
+    throw new Error('Failed to generate content');
   }
 
   const hashtags = normalizeExtraHashtags([

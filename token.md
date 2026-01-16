@@ -13,13 +13,15 @@
 - 用途: Page token取得の元になる
 - 再取得（短期→長期交換）:
 
-```bash
-curl.exe -G "https://graph.facebook.com/v20.0/oauth/access_token" ^
-  --data-urlencode "grant_type=fb_exchange_token" ^
-  --data-urlencode "client_id=APP_ID" ^
-  --data-urlencode "client_secret=APP_SECRET" ^
-  --data-urlencode "fb_exchange_token=SHORT_USER_TOKEN"
-```
+$clientId = "APP_ID"
+$clientSecret = "APP_SECRET"
+$short = "SHORT_USER_TOKEN"
+$url = "https://graph.facebook.com/v20.0/oauth/access_token"
+
+curl.exe -G $url `
+  --data-urlencode "grant_type=fb_exchange_token" `
+  --data-urlencode "client_id=$clientId" `  --data-urlencode "client_secret=$clientSecret"`
+--data-urlencode "fb_exchange_token=$short"
 
 - 返ってきた `access_token` が長期User token
 
