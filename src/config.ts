@@ -33,6 +33,14 @@ type ImageOverlayConfig = {
   text: string;
 };
 
+type XConfig = {
+  apiKey: string;
+  apiSecret: string;
+  accessToken: string;
+  accessSecret: string;
+  enabled: boolean;
+};
+
 function normalizeHashtags(raw: string): string[] {
   const tags = raw
     .split(/\s+/)
@@ -86,6 +94,22 @@ export const CONFIG = {
     apiVersion: process.env.IG_API_VERSION ?? 'v20.0',
     publicBaseUrl: process.env.PUBLIC_BASE_URL ?? '',
   } satisfies InstagramConfig,
+  x: (() => {
+    const apiKey = process.env.X_API_KEY ?? '';
+    const apiSecret = process.env.X_API_SECRET ?? '';
+    const accessToken = process.env.X_ACCESS_TOKEN ?? '';
+    const accessSecret = process.env.X_ACCESS_TOKEN_SECRET ?? '';
+    const enabled = [apiKey, apiSecret, accessToken, accessSecret].every(
+      (value) => value.trim().length > 0,
+    );
+    return {
+      apiKey,
+      apiSecret,
+      accessToken,
+      accessSecret,
+      enabled,
+    } satisfies XConfig;
+  })(),
   databaseUrl: process.env.DATABASE_URL ?? '',
   storage: {
     gcsBucket: process.env.GCS_BUCKET ?? '',

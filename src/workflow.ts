@@ -1,9 +1,18 @@
 ﻿import { buildTweet } from './buildTweet';
 import { CONFIG, normalizeExtraHashtags } from './config';
-import { getLatestDraft, getRecentPosts, insertPostDraft, markPostFailed, markPostPosted, PostRecord } from './db';
+import {
+  getLatestDraft,
+  getRecentPosts,
+  insertPostDraft,
+  markPostFailed,
+  markPostPosted,
+  markPostTweeted,
+  PostRecord,
+} from './db';
 import { generateImage } from './imageGenerator';
 import { generatePostContent } from './textGenerator';
 import { postToInstagram } from './instagramPoster';
+import { postToX } from './xPoster';
 
 const MAX_GENERATION_ATTEMPTS = 3;
 
@@ -105,8 +114,22 @@ export async function postLatestDraft(): Promise<PostRecord> {
 
   try {
     const result = await postToInstagram(draft.post_text, draft.image_path, draft.image_url);
-    await markPostPosted(draft.id, result.postId, result.containerId);
-    return { ...draft, status: 'posted', ig_post_id: result.postId, ig_container_id: result.containerId };
+    let tweetId: string | null = null;
+    if (CONFIG.x.enabled) {
+      try {
+        tweetId = await postToX(draft.post_text);
+      } catch {
+        tweetId = null;
+      }
+    }
+    await markPostPosted(draft.id, result.postId, result.containerId, tweetId);
+    return {
+      ...draft,
+      status: 'posted',
+      ig_post_id: result.postId,
+      ig_container_id: result.containerId,
+      tweet_id: tweetId,
+    };
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Failed to post to Instagram';
     await markPostFailed(draft.id, message);
@@ -118,11 +141,40 @@ export async function createAndPost(scheduledFor?: string): Promise<PostRecord> 
   const draft = await createDraft(scheduledFor);
   try {
     const result = await postToInstagram(draft.post_text, draft.image_path, draft.image_url);
-    await markPostPosted(draft.id, result.postId, result.containerId);
-    return { ...draft, status: 'posted', ig_post_id: result.postId, ig_container_id: result.containerId };
+    let tweetId: string | null = null;
+    if (CONFIG.x.enabled) {
+      try {
+        tweetId = await postToX(draft.post_text);
+      } catch {
+        tweetId = null;
+      }
+    }
+    await markPostPosted(draft.id, result.postId, result.containerId, tweetId);
+    return {
+      ...draft,
+      status: 'posted',
+      ig_post_id: result.postId,
+      ig_container_id: result.containerId,
+      tweet_id: tweetId,
+    };
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Failed to post to Instagram';
     await markPostFailed(draft.id, message);
     throw err;
   }
+}
+
+export async function postLatestDraftToX(): Promise<PostRecord> {
+  const draft = await getLatestDraft();
+  if (!draft) {
+    throw new Error('No draft available');
+  }
+
+  const tweetId = await postToX(draft.post_text);
+  await markPostTweeted(draft.id, tweetId);
+
+  return {
+    ...draft,
+    tweet_id: tweetId,
+  };
 }

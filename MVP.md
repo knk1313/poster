@@ -97,6 +97,7 @@
 - `GCS_PUBLIC`（`true` or `false`）
 - `GCS_PREFIX`（例: `images`）
 - `CRON_SECRET`
+- `X_API_KEY` / `X_API_SECRET` / `X_ACCESS_TOKEN` / `X_ACCESS_TOKEN_SECRET`（X投稿を使う場合）
 
 ### 6.2 Cloud Storage について
 
@@ -110,6 +111,7 @@
 - `GET /health` : ヘルスチェック
 - `GET|POST /generate` : 下書き生成
 - `POST /post` : 最新の下書きを投稿
+- `POST /post-x` : 最新の下書きをXに投稿
 - `POST /scheduled` : 生成→投稿を一括実行
 
 ※ `CRON_SECRET` を設定している場合は `X-CRON-SECRET` を付与する。
@@ -136,7 +138,13 @@ curl.exe -X POST "https://YOUR_RUN_URL/generate" -H "X-CRON-SECRET: your-secret"
 curl.exe -X POST "https://YOUR_RUN_URL/scheduled" -H "X-CRON-SECRET: your-secret" --data-binary "{}"
 ```
 
-### 8.4 署名URL運用時の注意
+### 8.4 Xのみ投稿
+
+```bash
+curl.exe -X POST "https://YOUR_RUN_URL/post-x" -H "X-CRON-SECRET: your-secret" --data-binary "{}"
+```
+
+### 8.5 署名URL運用時の注意
 
 - `GCS_PUBLIC=false` の場合、署名URLは短時間で失効するため
   `POST /scheduled` で **生成→投稿を連続実行**する。

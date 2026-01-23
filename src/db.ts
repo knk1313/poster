@@ -130,12 +130,17 @@ export async function insertPostDraft(input: Omit<PostRecord, 'id'>): Promise<nu
   return result.rows[0]?.id ?? 0;
 }
 
-export async function markPostPosted(id: number, igPostId: string, igContainerId: string): Promise<void> {
+export async function markPostPosted(
+  id: number,
+  igPostId: string,
+  igContainerId: string,
+  tweetId?: string | null,
+): Promise<void> {
   await ensureInitialized();
   const db = getPool();
   await db.query(
-    `UPDATE posts SET status = $1, ig_post_id = $2, ig_container_id = $3, error = NULL WHERE id = $4`,
-    ['posted', igPostId, igContainerId, id],
+    `UPDATE posts SET status = $1, ig_post_id = $2, ig_container_id = $3, tweet_id = $4, error = NULL WHERE id = $5`,
+    ['posted', igPostId, igContainerId, tweetId ?? null, id],
   );
 }
 
@@ -145,6 +150,15 @@ export async function markPostFailed(id: number, error: string): Promise<void> {
   await db.query(`UPDATE posts SET status = $1, error = $2 WHERE id = $3`, [
     'failed',
     error,
+    id,
+  ]);
+}
+
+export async function markPostTweeted(id: number, tweetId: string): Promise<void> {
+  await ensureInitialized();
+  const db = getPool();
+  await db.query(`UPDATE posts SET tweet_id = $1, error = NULL WHERE id = $2`, [
+    tweetId,
     id,
   ]);
 }

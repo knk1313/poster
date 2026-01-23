@@ -4,7 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { URL } from 'node:url';
 import { CONFIG } from './config';
-import { createAndPost, createDraft, postLatestDraft } from './workflow';
+import { createAndPost, createDraft, postLatestDraft, postLatestDraftToX } from './workflow';
 
 function sendJson(res: http.ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body, null, 2);
@@ -81,6 +81,12 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse): Prom
 
     if (url.pathname === '/post') {
       const result = await postLatestDraft();
+      sendJson(res, 200, { ok: true, result });
+      return;
+    }
+
+    if (url.pathname === '/post-x') {
+      const result = await postLatestDraftToX();
       sendJson(res, 200, { ok: true, result });
       return;
     }
