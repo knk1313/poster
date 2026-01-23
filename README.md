@@ -1,6 +1,6 @@
 # Poster X Bot
 
-AI-generated posts (quote + short explanation + trivia + hashtags + image) are created and posted to a single account. This MVP targets Instagram posting with generated images and captions. X posting is on hold.
+AI-generated posts (quote + short explanation + trivia + hashtags + image) are created and posted to a single account. This MVP targets Instagram posting with generated images and captions. X posting is optional.
 
 ## Requirements
 
@@ -9,6 +9,7 @@ AI-generated posts (quote + short explanation + trivia + hashtags + image) are c
 - Instagram Graph API access token + IG user id (Business/Creator)
 - PostgreSQL (Cloud SQL recommended) with `DATABASE_URL`
 - Public image hosting (Cloud Storage recommended)
+- X OAuth 2.0 user access token (optional)
 
 ## Setup
 
@@ -31,6 +32,7 @@ Endpoints (GET/POST):
 - `/scheduled` -> generate + post (Instagram)
 - `/generate` -> generate draft only
 - `/post` -> post the latest draft (Instagram)
+- `/post-x` -> post the latest draft (X, OAuth 2.0 user token)
 - `/images/<file>` -> serve generated images (used for Instagram in local mode)
 
 If `CRON_SECRET` is set, include it:
@@ -68,7 +70,7 @@ Deploy to Cloud Run:
 gcloud run deploy poster-x-bot \
   --source . \
   --region asia-northeast1 \
-  --set-env-vars OPENAI_API_KEY=...,IG_ACCESS_TOKEN=...,IG_USER_ID=...,DATABASE_URL=...,GCS_BUCKET=...,GCS_PUBLIC=true,GCS_PREFIX=images,CRON_SECRET=... \
+  --set-env-vars OPENAI_API_KEY=...,IG_ACCESS_TOKEN=...,IG_USER_ID=...,DATABASE_URL=...,GCS_BUCKET=...,GCS_PUBLIC=true,GCS_PREFIX=images,CRON_SECRET=...,X_OAUTH2_ACCESS_TOKEN=... \
   --set-cloudsql-instances PROJECT:REGION:INSTANCE
 ```
 

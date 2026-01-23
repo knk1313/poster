@@ -97,7 +97,7 @@
 - `GCS_PUBLIC`（`true` or `false`）
 - `GCS_PREFIX`（例: `images`）
 - `CRON_SECRET`
-- `X_API_KEY` / `X_API_SECRET` / `X_ACCESS_TOKEN` / `X_ACCESS_TOKEN_SECRET`（X投稿を使う場合）
+- `X_OAUTH2_ACCESS_TOKEN`（X投稿を使う場合・OAuth 2.0）
 
 ### 6.2 Cloud Storage について
 

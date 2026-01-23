@@ -34,10 +34,7 @@ type ImageOverlayConfig = {
 };
 
 type XConfig = {
-  apiKey: string;
-  apiSecret: string;
-  accessToken: string;
-  accessSecret: string;
+  oauth2AccessToken: string;
   enabled: boolean;
 };
 
@@ -95,18 +92,10 @@ export const CONFIG = {
     publicBaseUrl: process.env.PUBLIC_BASE_URL ?? '',
   } satisfies InstagramConfig,
   x: (() => {
-    const apiKey = process.env.X_API_KEY ?? '';
-    const apiSecret = process.env.X_API_SECRET ?? '';
-    const accessToken = process.env.X_ACCESS_TOKEN ?? '';
-    const accessSecret = process.env.X_ACCESS_TOKEN_SECRET ?? '';
-    const enabled = [apiKey, apiSecret, accessToken, accessSecret].every(
-      (value) => value.trim().length > 0,
-    );
+    const oauth2AccessToken = process.env.X_OAUTH2_ACCESS_TOKEN ?? '';
+    const enabled = oauth2AccessToken.trim().length > 0;
     return {
-      apiKey,
-      apiSecret,
-      accessToken,
-      accessSecret,
+      oauth2AccessToken,
       enabled,
     } satisfies XConfig;
   })(),
