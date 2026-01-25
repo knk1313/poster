@@ -16,6 +16,34 @@ type RecentItem = {
   quote: string;
 };
 
+const NG_TERMS = [
+  '自殺',
+  '自死',
+  '殺人',
+  '暴力',
+  '虐待',
+  '差別',
+  '犯罪',
+  '性的',
+  '性行為',
+  '強姦',
+  'レイプ',
+  'ポルノ',
+  'ヌード',
+  '猥褻',
+  'エロ',
+  'suicide',
+  'violence',
+  'discrimination',
+  'crime',
+  'sexual',
+];
+
+export function containsNgWords(text: string): boolean {
+  const lowered = text.toLowerCase();
+  return NG_TERMS.some((term) => lowered.includes(term));
+}
+
 function normalizeHashtags(raw: unknown): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) {
@@ -83,6 +111,7 @@ Rules:
 - Subtheme: ${CONFIG.subtheme}.
 - Be accurate and cautious; if uncertain, say "諸説あり" in source.
 - Avoid political or discriminatory statements.
+- 自殺/暴力/差別/犯罪/性的表現は避ける。
 - Provide 2-3 topical hashtags (do NOT include fixed tags; they will be added later).
 - Output must be valid JSON only.
 `.trim();

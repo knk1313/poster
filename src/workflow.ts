@@ -10,7 +10,7 @@ import {
   PostRecord,
 } from './db';
 import { generateImage } from './imageGenerator';
-import { generatePostContent } from './textGenerator';
+import { containsNgWords, generatePostContent } from './textGenerator';
 import { postToInstagram } from './instagramPoster';
 import { postToX } from './xPoster';
 
@@ -34,6 +34,22 @@ export async function createDraft(scheduledFor?: string): Promise<PostRecord> {
     const candidate = await generatePostContent(
       recent.map((post) => ({ figureName: post.figure_name, quote: post.quote })),
     );
+    const combinedText = [
+      candidate.figureName,
+      candidate.quote,
+      candidate.source,
+      candidate.shortExplain,
+      candidate.trivia,
+      candidate.hashtags.join(' '),
+    ]
+      .join('\n')
+      .trim();
+
+    if (containsNgWords(combinedText)) {
+      console.warn(`[createDraft] NG word detected (attempt ${attempt})`);
+      continue;
+    }
+
     lastCandidate = candidate;
 
     if (isDuplicate(recent, candidate.figureName, candidate.quote)) {
@@ -117,7 +133,7 @@ export async function postLatestDraft(): Promise<PostRecord> {
     let tweetId: string | null = null;
     if (CONFIG.x.enabled) {
       try {
-        tweetId = await postToX(draft.post_text);
+        tweetId = await postToX(draft.post_text, draft.image_path);
       } catch {
         tweetId = null;
       }
@@ -144,7 +160,7 @@ export async function createAndPost(scheduledFor?: string): Promise<PostRecord> 
     let tweetId: string | null = null;
     if (CONFIG.x.enabled) {
       try {
-        tweetId = await postToX(draft.post_text);
+        tweetId = await postToX(draft.post_text, draft.image_path);
       } catch {
         tweetId = null;
       }
@@ -170,7 +186,7 @@ export async function postLatestDraftToX(): Promise<PostRecord> {
     throw new Error('No draft available');
   }
 
-  const tweetId = await postToX(draft.post_text);
+  const tweetId = await postToX(draft.post_text, draft.image_path);
   await markPostTweeted(draft.id, tweetId);
 
   return {

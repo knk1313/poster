@@ -92,7 +92,8 @@ export const CONFIG = {
     publicBaseUrl: process.env.PUBLIC_BASE_URL ?? '',
   } satisfies InstagramConfig,
   x: (() => {
-    const oauth2AccessToken = process.env.X_OAUTH2_ACCESS_TOKEN ?? '';
+    const oauth2AccessToken =
+      process.env.X_OAUTH2_ACCESS_TOKEN ?? process.env.USER_ACCESS_TOKEN ?? '';
     const enabled = oauth2AccessToken.trim().length > 0;
     return {
       oauth2AccessToken,
