@@ -35,6 +35,10 @@ type ImageOverlayConfig = {
 
 type XConfig = {
   oauth2AccessToken: string;
+  refreshToken: string;
+  clientId: string;
+  clientSecret: string;
+  accessTokenExpiresAt: number | null;
   enabled: boolean;
 };
 
@@ -94,9 +98,27 @@ export const CONFIG = {
   x: (() => {
     const oauth2AccessToken =
       process.env.X_OAUTH2_ACCESS_TOKEN ?? process.env.USER_ACCESS_TOKEN ?? '';
-    const enabled = oauth2AccessToken.trim().length > 0;
+    const refreshToken = process.env.X_REFRESH_TOKEN ?? '';
+    const clientId = process.env.X_CLIENT_ID ?? '';
+    const clientSecret = process.env.X_CLIENT_SECRET ?? '';
+    const rawExpiresAt = process.env.X_ACCESS_TOKEN_EXPIRES_AT ?? '';
+    let accessTokenExpiresAt: number | null = null;
+    if (rawExpiresAt) {
+      const asNumber = Number(rawExpiresAt);
+      if (!Number.isNaN(asNumber)) {
+        accessTokenExpiresAt = asNumber < 1e12 ? asNumber * 1000 : asNumber;
+      } else {
+        const parsed = Date.parse(rawExpiresAt);
+        accessTokenExpiresAt = Number.isNaN(parsed) ? null : parsed;
+      }
+    }
+    const enabled = oauth2AccessToken.trim().length > 0 || refreshToken.trim().length > 0;
     return {
       oauth2AccessToken,
+      refreshToken,
+      clientId,
+      clientSecret,
+      accessTokenExpiresAt,
       enabled,
     } satisfies XConfig;
   })(),

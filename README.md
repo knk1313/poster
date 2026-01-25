@@ -10,6 +10,7 @@ AI-generated posts (quote + short explanation + trivia + hashtags + image) are c
 - PostgreSQL (Cloud SQL recommended) with `DATABASE_URL`
 - Public image hosting (Cloud Storage recommended)
 - X OAuth 2.0 user access token (optional)
+  - For auto-refresh: `X_REFRESH_TOKEN`, plus `X_CLIENT_ID` (and `X_CLIENT_SECRET` if confidential client)
 
 ## Setup
 
