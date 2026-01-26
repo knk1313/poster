@@ -2,6 +2,7 @@ import { CONFIG } from './config';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { Storage } from '@google-cloud/storage';
 
 function extractTwitterError(err: any): Record<string, unknown> {
   return {
@@ -19,6 +20,7 @@ let cachedAccessToken = '';
 let cachedRefreshToken = '';
 let cachedAccessExpiresAt: number | null = null;
 let cachedSecretClient: SecretManagerServiceClient | null = null;
+let cachedStorageClient: Storage | null = null;
 let refreshTokenLoaded = false;
 
 function initTokenCache(): void {
@@ -43,6 +45,13 @@ function getSecretClient(): SecretManagerServiceClient {
     cachedSecretClient = new SecretManagerServiceClient();
   }
   return cachedSecretClient;
+}
+
+function getStorageClient(): Storage {
+  if (!cachedStorageClient) {
+    cachedStorageClient = new Storage();
+  }
+  return cachedStorageClient;
 }
 
 function resolveSecretName(secretName: string): string {
@@ -215,10 +224,51 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
+function parseGcsUrl(url: URL): { bucket: string; objectPath: string } | null {
+  if (url.hostname === 'storage.googleapis.com') {
+    const parts = url.pathname.replace(/^\/+/, '').split('/');
+    if (parts.length < 2) return null;
+    const bucket = parts.shift() ?? '';
+    const objectPath = parts.join('/');
+    return bucket && objectPath ? { bucket, objectPath } : null;
+  }
+
+  if (url.hostname.endsWith('.storage.googleapis.com')) {
+    const bucket = url.hostname.replace('.storage.googleapis.com', '');
+    const objectPath = url.pathname.replace(/^\/+/, '');
+    return bucket && objectPath ? { bucket, objectPath } : null;
+  }
+
+  return null;
+}
+
+async function getSignedUrlFromGcs(bucket: string, objectPath: string): Promise<string> {
+  const storage = getStorageClient();
+  const file = storage.bucket(bucket).file(objectPath);
+  const [signedUrl] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + 60 * 60 * 1000,
+  });
+  return signedUrl;
+}
+
 async function loadImageBytes(source: string): Promise<{ data: Buffer; mimeType: string }> {
   const maxBytes = 5 * 1024 * 1024;
   if (isHttpUrl(source)) {
-    const res = await fetch(source);
+    const originalUrl = new URL(source);
+    let res = await fetch(originalUrl);
+    if (!res.ok) {
+      const parsed = parseGcsUrl(originalUrl);
+      if (parsed) {
+        try {
+          const refreshedUrl = await getSignedUrlFromGcs(parsed.bucket, parsed.objectPath);
+          res = await fetch(refreshedUrl);
+        } catch (err) {
+          throw new Error(`Failed to refresh signed URL: ${String(err)}`);
+        }
+      }
+    }
+
     if (!res.ok) {
       throw new Error(`Failed to fetch image URL (${res.status})`);
     }
