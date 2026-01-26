@@ -53,6 +53,32 @@ function resolveSecretName(secretName: string): string {
   return `projects/${projectId}/secrets/${secretName}`;
 }
 
+async function loadRefreshTokenFromSecret(): Promise<string> {
+  const secretName = CONFIG.x.refreshTokenSecret.trim();
+  if (!secretName) return '';
+  const name = `${resolveSecretName(secretName)}/versions/latest`;
+  const client = getSecretClient();
+  const [version] = await client.accessSecretVersion({ name });
+  const data = version?.payload?.data?.toString('utf8') ?? '';
+  return data.trim();
+}
+
+async function ensureRefreshToken(): Promise<void> {
+  if (cachedRefreshToken) return;
+  try {
+    const token = await loadRefreshTokenFromSecret();
+    if (token) {
+      cachedRefreshToken = token;
+      console.log('[postToX] Loaded refresh token from Secret Manager');
+    }
+  } catch (err: any) {
+    console.error(
+      '[postToX] Failed to load refresh token from Secret Manager',
+      extractTwitterError(err),
+    );
+  }
+}
+
 async function persistRefreshToken(token: string): Promise<void> {
   const secretName = CONFIG.x.refreshTokenSecret.trim();
   if (!secretName) return;
@@ -69,6 +95,7 @@ async function persistRefreshToken(token: string): Promise<void> {
 
 async function refreshAccessToken(): Promise<string> {
   initTokenCache();
+  await ensureRefreshToken();
   if (!cachedRefreshToken) {
     throw new Error('X refresh token is not set in environment variables');
   }

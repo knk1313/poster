@@ -11,7 +11,8 @@ AI-generated posts (quote + short explanation + trivia + hashtags + image) are c
 - Public image hosting (Cloud Storage recommended)
 - X OAuth 2.0 user access token (optional)
   - For auto-refresh: `X_REFRESH_TOKEN`, plus `X_CLIENT_ID` (and `X_CLIENT_SECRET` if confidential client)
-  - Optional: `X_REFRESH_TOKEN_SECRET` to store rotated refresh tokens in Secret Manager
+  - Optional: `X_REFRESH_TOKEN_SECRET` to store/read rotated refresh tokens in Secret Manager
+    - Cloud Run service account needs `secretmanager.versions.add` and `secretmanager.versions.access`
 
 ## Setup
 
