@@ -133,7 +133,7 @@ export async function postLatestDraft(): Promise<PostRecord> {
     let tweetId: string | null = null;
     if (CONFIG.x.enabled) {
       try {
-        tweetId = await postToX(draft.post_text, draft.image_path);
+        tweetId = await postToX(draft.post_text, draft.image_url || draft.image_path);
       } catch {
         tweetId = null;
       }
@@ -160,7 +160,7 @@ export async function createAndPost(scheduledFor?: string): Promise<PostRecord> 
     let tweetId: string | null = null;
     if (CONFIG.x.enabled) {
       try {
-        tweetId = await postToX(draft.post_text, draft.image_path);
+        tweetId = await postToX(draft.post_text, draft.image_url || draft.image_path);
       } catch {
         tweetId = null;
       }
@@ -186,7 +186,7 @@ export async function postLatestDraftToX(): Promise<PostRecord> {
     throw new Error('No draft available');
   }
 
-  const tweetId = await postToX(draft.post_text, draft.image_path);
+  const tweetId = await postToX(draft.post_text, draft.image_url || draft.image_path);
   await markPostTweeted(draft.id, tweetId);
 
   return {

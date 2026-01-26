@@ -206,16 +206,48 @@ function getMimeType(filePath: string): string {
   }
 }
 
-async function uploadMediaToX(filePath: string): Promise<string> {
-  const stats = await fs.stat(filePath);
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+async function loadImageBytes(source: string): Promise<{ data: Buffer; mimeType: string }> {
   const maxBytes = 5 * 1024 * 1024;
+  if (isHttpUrl(source)) {
+    const res = await fetch(source);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch image URL (${res.status})`);
+    }
+    const contentType = res.headers.get('content-type') ?? '';
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    if (buffer.length > maxBytes) {
+      throw new Error(`Image download is too large (${buffer.length} bytes). Max is ${maxBytes}.`);
+    }
+    const urlPath = new URL(source).pathname;
+    const mimeType = contentType.startsWith('image/')
+      ? contentType
+      : getMimeType(urlPath || 'image.png');
+    return { data: buffer, mimeType };
+  }
+
+  const stats = await fs.stat(source);
   if (stats.size > maxBytes) {
     throw new Error(`Image file is too large (${stats.size} bytes). Max is ${maxBytes}.`);
   }
-  const mimeType = getMimeType(filePath);
-  const file = await fs.readFile(filePath);
+  const mimeType = getMimeType(source);
+  const file = await fs.readFile(source);
+  return { data: file, mimeType };
+}
+
+async function uploadMediaToX(source: string): Promise<string> {
+  const { data, mimeType } = await loadImageBytes(source);
   const payload = {
-    media: file.toString('base64'),
+    media: data.toString('base64'),
     media_category: 'tweet_image',
     media_type: mimeType,
     shared: false,

@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   const imagePath =
     imageArgIndex >= 0 ? (process.argv[imageArgIndex + 1] ?? '') : '';
   if (imageArgIndex >= 0 && !imagePath) {
-    throw new Error('Missing value for --image (provide a local file path)');
+    throw new Error('Missing value for --image (provide a local file path or URL)');
   }
   let content = null;
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
