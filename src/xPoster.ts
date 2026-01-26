@@ -19,6 +19,7 @@ let cachedAccessToken = '';
 let cachedRefreshToken = '';
 let cachedAccessExpiresAt: number | null = null;
 let cachedSecretClient: SecretManagerServiceClient | null = null;
+let refreshTokenLoaded = false;
 
 function initTokenCache(): void {
   if (!cachedAccessToken) {
@@ -64,10 +65,11 @@ async function loadRefreshTokenFromSecret(): Promise<string> {
 }
 
 async function ensureRefreshToken(): Promise<void> {
-  if (cachedRefreshToken) return;
+  if (refreshTokenLoaded) return;
+  refreshTokenLoaded = true;
   try {
     const token = await loadRefreshTokenFromSecret();
-    if (token) {
+    if (token && token !== cachedRefreshToken) {
       cachedRefreshToken = token;
       console.log('[postToX] Loaded refresh token from Secret Manager');
     }
