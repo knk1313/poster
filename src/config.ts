@@ -36,6 +36,7 @@ type ImageOverlayConfig = {
 type XConfig = {
   oauth2AccessToken: string;
   refreshToken: string;
+  refreshTokenSecret: string;
   clientId: string;
   clientSecret: string;
   accessTokenExpiresAt: number | null;
@@ -99,6 +100,7 @@ export const CONFIG = {
     const oauth2AccessToken =
       process.env.X_OAUTH2_ACCESS_TOKEN ?? process.env.USER_ACCESS_TOKEN ?? '';
     const refreshToken = process.env.X_REFRESH_TOKEN ?? '';
+    const refreshTokenSecret = process.env.X_REFRESH_TOKEN_SECRET ?? '';
     const clientId = process.env.X_CLIENT_ID ?? '';
     const clientSecret = process.env.X_CLIENT_SECRET ?? '';
     const rawExpiresAt = process.env.X_ACCESS_TOKEN_EXPIRES_AT ?? '';
@@ -116,6 +118,7 @@ export const CONFIG = {
     return {
       oauth2AccessToken,
       refreshToken,
+      refreshTokenSecret,
       clientId,
       clientSecret,
       accessTokenExpiresAt,

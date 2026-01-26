@@ -1,6 +1,7 @@
 import { CONFIG } from './config';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 function extractTwitterError(err: any): Record<string, unknown> {
   return {
@@ -17,6 +18,7 @@ function extractTwitterError(err: any): Record<string, unknown> {
 let cachedAccessToken = '';
 let cachedRefreshToken = '';
 let cachedAccessExpiresAt: number | null = null;
+let cachedSecretClient: SecretManagerServiceClient | null = null;
 
 function initTokenCache(): void {
   if (!cachedAccessToken) {
@@ -33,6 +35,36 @@ function initTokenCache(): void {
 function shouldRefreshToken(): boolean {
   if (!cachedAccessExpiresAt) return false;
   return Date.now() + 60_000 >= cachedAccessExpiresAt;
+}
+
+function getSecretClient(): SecretManagerServiceClient {
+  if (!cachedSecretClient) {
+    cachedSecretClient = new SecretManagerServiceClient();
+  }
+  return cachedSecretClient;
+}
+
+function resolveSecretName(secretName: string): string {
+  if (secretName.startsWith('projects/')) return secretName;
+  const projectId = process.env.GCP_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT ?? '';
+  if (!projectId) {
+    throw new Error('GCP project id is not set for Secret Manager');
+  }
+  return `projects/${projectId}/secrets/${secretName}`;
+}
+
+async function persistRefreshToken(token: string): Promise<void> {
+  const secretName = CONFIG.x.refreshTokenSecret.trim();
+  if (!secretName) return;
+  const parent = resolveSecretName(secretName);
+  const client = getSecretClient();
+  await client.addSecretVersion({
+    parent,
+    payload: {
+      data: Buffer.from(token, 'utf8'),
+    },
+  });
+  console.log('[postToX] Refresh token stored in Secret Manager');
 }
 
 async function refreshAccessToken(): Promise<string> {
@@ -82,9 +114,15 @@ async function refreshAccessToken(): Promise<string> {
   cachedAccessToken = String(newAccessToken);
   if (data?.refresh_token) {
     cachedRefreshToken = String(data.refresh_token);
-    console.warn(
-      '[postToX] Refresh token rotated. Update X_REFRESH_TOKEN in your environment.',
-    );
+    try {
+      await persistRefreshToken(cachedRefreshToken);
+    } catch (err: any) {
+      console.error(
+        '[postToX] Failed to store refresh token in Secret Manager',
+        extractTwitterError(err),
+      );
+      console.warn('[postToX] Refresh token rotated. Update X_REFRESH_TOKEN manually.');
+    }
   }
   if (typeof data?.expires_in === 'number') {
     cachedAccessExpiresAt = Date.now() + data.expires_in * 1000;

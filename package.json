@@ -28,6 +28,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
     "@google-cloud/storage": "^7.17.1",
     "dotenv": "^17.2.3",
     "openai": "^6.9.1",
