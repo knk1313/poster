@@ -245,9 +245,9 @@ async function loadImageBytes(source: string): Promise<{ data: Buffer; mimeType:
 }
 
 async function uploadMediaToX(source: string): Promise<string> {
-  const { data, mimeType } = await loadImageBytes(source);
+  const { data: imageData, mimeType } = await loadImageBytes(source);
   const payload = {
-    media: data.toString('base64'),
+    media: imageData.toString('base64'),
     media_category: 'tweet_image',
     media_type: mimeType,
     shared: false,
@@ -261,17 +261,17 @@ async function uploadMediaToX(source: string): Promise<string> {
     body: JSON.stringify(payload),
   });
 
-  const data = await res.json().catch(() => ({}));
+  const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const error = new Error(
-      `Media upload failed with code ${res.status}: ${JSON.stringify(data)}`,
+      `Media upload failed with code ${res.status}: ${JSON.stringify(json)}`,
     );
-    (error as any).data = data;
+    (error as any).data = json;
     (error as any).status = res.status;
     throw error;
   }
 
-  const mediaId = data?.data?.id;
+  const mediaId = json?.data?.id;
   if (!mediaId) {
     throw new Error('Media upload succeeded but no id returned');
   }
